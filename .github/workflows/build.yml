@@ -29,7 +29,7 @@ jobs:
         file: ./docker/Dockerfile
         push: true
         tags: |
-          adhivenkatesh/cemp-aks-dotnet:v2
-          adhivenkatesh/cemp-aks-dotnet:latest
+          adhivenkatesh7/cemp-api:v2
+          adhivenkatesh7/cemp-api:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
