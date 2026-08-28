@@ -1,0 +1,4 @@
+az acr build -r containerregistrycemp -t cemp-api:v2 -f Dockerfile .
+kubectl set image deployment/cemp-api cemp-backend=containerregistrycemp.azurecr.io/cemp-api:v2 -n cemp
+kubectl rollout status deployment/cemp-api -n cemp
+curl http://cemp.48.206.33.47.nip.io/api/config

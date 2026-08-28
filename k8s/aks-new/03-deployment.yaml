@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cemp-api
+  namespace: cemp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cemp-api
+  template:
+    metadata:
+      labels:
+        app: cemp-api
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: cemp-api
+        image: containerregistrycemp.azurecr.io/cemp-api:v2
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: cemp-app-config
+        - secretRef:
+            name: cemp-app-secret
