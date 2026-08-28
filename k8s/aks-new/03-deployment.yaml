@@ -13,15 +13,13 @@ spec:
       labels:
         app: cemp-api
     spec:
-      imagePullSecrets:
-      - name: acr-secret
       containers:
-      - name: cemp-api
-        image: adhivenkatesh7/cemp-api:v2
+            - name: cemp-api
+        image: adhivenkatesh7/cemp-api:v2  # <-- your DockerHub, NOT ACR
         ports:
-        - containerPort: 8080
+                - containerPort: 8080
         envFrom:
-        - configMapRef:
+                - configMapRef:
             name: cemp-app-config
-        - secretRef:
+                - secretRef:
             name: cemp-app-secret
