@@ -167,5 +167,5 @@ app.MapGet("/api/debug/env", () =>
 });
 
 app.Run();
-//app.Run("http://0.0.0.0:8080");
+app.Run("http://0.0.0.0:8080");
 // ENDS HERE 
