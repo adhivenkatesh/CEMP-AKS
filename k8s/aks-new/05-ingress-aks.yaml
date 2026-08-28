@@ -8,12 +8,11 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: cemp.48.206.33.47.nip.io
-      http:
+    - http:
       paths:
             - path: /
-      pathType: Prefix
-      backend:
+        pathType: Prefix
+        backend:
           service:
             name: cemp-api-service
             port:

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: cemp-api
+  labels:
+    app: cemp-api
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: cemp-api
+
+  template:
+    metadata:
+      labels:
+        app: cemp-api
+
+    spec:
+
+      imagePullSecrets:
+        - name: acr-secret   
+      containers:
+
+      - name: cemp-api
+
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8080
+
+        env:
+
+        # ConfigMap values
+        - name: APP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: cemp-config
+              key: APP_NAME
+
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: cemp-config
+              key: APP_VERSION
+
+        - name: COMPANY_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: cemp-config
+              key: COMPANY_NAME
+
+
+        # SQL Database Secret values
+        - name: DB_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: cemp-secret
+              key: DB_SERVER
+
+        - name: DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: cemp-secret
+              key: DB_DATABASE
+
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: cemp-secret
+              key: DB_USERNAME
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cemp-secret
+              key: DB_PASSWORD
+
+
+        # API Secret
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cemp-secret
+              key: API_KEY
+
+
+        resources:
+
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

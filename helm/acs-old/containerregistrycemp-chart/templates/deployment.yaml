@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "containerregistrycemp-chart.fullname" . }}
+  namespace: {{ .Values.namespace | default "cemp" }}
+  labels:
+    {{- include "containerregistrycemp-chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "containerregistrycemp-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "containerregistrycemp-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: {{ .Values.service.port | default 8080 }}
+        envFrom:
+        - configMapRef:
+            name: cemp-app-config
+        - secretRef:
+            name: cemp-app-secret
