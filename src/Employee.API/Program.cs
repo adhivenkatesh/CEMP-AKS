@@ -140,6 +140,7 @@ app.MapGet("/", () =>
     });
 });
 
+
 app.MapGet("/api/config", () =>
 {
     return Results.Ok(new
@@ -147,25 +148,20 @@ app.MapGet("/api/config", () =>
         ApplicationName = appName,
         Version = version,
         Company = company,
-        DatabaseServer = dbServer,
-        DatabaseName = dbDatabase,
-        DatabaseUser = dbUser,
         DatabaseConfigured = !string.IsNullOrEmpty(dbPassword) && dbPassword != "not-set",
-        ApiKeyConfigured = !string.IsNullOrEmpty(apiKey)
+        ApiKeyConfigured = !string.IsNullOrEmpty(apiKey),
+        Status = "Running"
+        // REMOVED: DatabaseServer, DatabaseName, DatabaseUser - never expose DB details
     });
 });
+
 
 app.MapGet("/api/health", () =>
 {
     return Results.Ok(new { Health = health });
 });
 
-app.MapGet("/api/debug/env", () =>
-{
-    // only for debugging, remove in prod
-    return Results.Ok(Environment.GetEnvironmentVariables());
-});
+// REMOVED: /api/debug/env - never keep in prod, it leaks secrets
 
-//app.Run();
 app.Run("http://0.0.0.0:8080");
 // ENDS HERE 
