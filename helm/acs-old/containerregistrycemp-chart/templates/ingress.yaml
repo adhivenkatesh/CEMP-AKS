@@ -1,19 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cemp-ingress
-  namespace: cemp
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: cemp-api-ingress
 spec:
   ingressClassName: nginx
   rules:
-    - http:
-      paths:
-            - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: cemp-api-service
-            port:
-              number: 80
+    - host: cemp.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cemp-api-service
+                port:
+                  number: 80

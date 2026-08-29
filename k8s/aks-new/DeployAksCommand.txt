@@ -1,10 +1,10 @@
-kubectl apply -f 00-namespace.yaml
+kubectl apply -f ./k8s/aks-new/00-namespace.yaml
 kubectl create secret docker-registry acr-secret --docker-server=containerregistrycemp.azurecr.io --docker-username=... --docker-password=... -n cemp
-kubectl apply -f 01-configmap.yaml
-kubectl apply -f 02-secret.yaml
-kubectl apply -f 03-deployment.yaml
-kubectl apply -f 04-service.yaml
-kubectl apply -f 05-ingress-aks.yaml
+kubectl apply -f ./k8s/aks-new/01-configmap.yaml
+kubectl apply -f ./k8s/aks-new/02-secret.yaml
+kubectl apply -f ./k8s/aks-new/03-deployment.yaml
+kubectl apply -f ./k8s/aks-new/04-service.yaml
+kubectl apply -f ./k8s/aks-new/05-ingress-aks.yaml
 
 
 NEW DEPLYMENT FOR ENVIRONMENTS (DEV,PROD,TEST)
@@ -16,9 +16,9 @@ kubectl apply -f kubernetes/01-configmap.yaml
 kubectl apply -f kubernetes/02-secret.yaml
 
 # 3. DB first
-kubectl apply -f kubernetes/06-pvc.yaml
-kubectl apply -f kubernetes/07-sql-deployment.yaml
-kubectl apply -f kubernetes/08-sql-service.yaml
+kubectl apply -f ./k8s/aks-new/06-pvc.yaml
+kubectl apply -f ./k8s/aks-new/07-sql-deployment.yaml
+kubectl apply -f ./k8s/aks-new/08-sql-service.yaml
 
 # Wait for DB ready
 kubectl get pods -n cemp -w
