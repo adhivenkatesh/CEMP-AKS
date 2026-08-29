@@ -113,6 +113,11 @@ DateTime indianTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
 
 var health = "Running successfully with github-actions as on:- " + $"{indianTime}" ;
 
+
+// Get env - if local Development use 5000, else AKS uses 80
+var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+var port = Environment.GetEnvironmentVariable("API_PORT");
+
 var appName = GetConfig("APP_NAME", "applicationName", "CEMP-Portal");
 var version = GetConfig("APP_VERSION", "version", "v2.1.0");
 var company = GetConfig("COMPANY_NAME", "company", "IKEA");
@@ -163,5 +168,10 @@ app.MapGet("/api/health", () =>
 
 // REMOVED: /api/debug/env - never keep in prod, it leaks secrets
 
-app.Run("http://0.0.0.0:8080");
+if (string.IsNullOrEmpty(port))
+{
+    port = env == "Development" ? "5000" : "80";
+}
+
+app.Run($"http://0.0.0.0:{port}");
 // ENDS HERE 

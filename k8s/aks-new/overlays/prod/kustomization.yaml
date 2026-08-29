@@ -1,0 +1,17 @@
+resources:
+    - ../../base
+configMapGenerator:
+    - name: cemp-config
+    behavior: merge
+    literals:
+            - ASPNETCORE_ENVIRONMENT=Production
+            - LOG_LEVEL=Error
+            - API_PORT=80
+patches:
+    - patch: |-
+            - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: cemp-api

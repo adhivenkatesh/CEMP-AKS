@@ -1,0 +1,9 @@
+resources:
+    - ../../base
+    configMapGenerator:
+       - name: cemp-config
+         behavior: merge
+           literals:
+            - ASPNETCORE_ENVIRONMENT=Development
+            - LOG_LEVEL=Debug
+            - API_PORT=80

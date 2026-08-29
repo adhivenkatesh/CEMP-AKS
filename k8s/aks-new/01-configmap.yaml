@@ -4,6 +4,9 @@ metadata:
   name: cemp-app-config
   namespace: cemp
 data:
+  API_PORT: "80"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_URLS: "http://+:80"
   # Uppercase - for legacy ACS
   APP_NAME: "CEMP-Portal"
   APP_VERSION: "v2.1.0"

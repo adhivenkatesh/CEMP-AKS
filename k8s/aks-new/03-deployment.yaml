@@ -19,7 +19,7 @@ spec:
       - name: cemp-api
         image: adhivenkatesh7/cemp-api:v2
         ports:
-        - containerPort: 8080
+        - containerPort: 80
         envFrom:
         - configMapRef:
             name: cemp-app-config
