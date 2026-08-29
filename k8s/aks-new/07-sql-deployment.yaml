@@ -14,22 +14,23 @@ spec:
         app: mssql
     spec:
       containers:
-            - name: mssql
+      - name: mssql
         image: mcr.microsoft.com/mssql/server:2022-latest
         ports:
-                - containerPort: 1433
+        - containerPort: 1433
+          name: mssql
         env:
-                - name: ACCEPT_EULA
+        - name: ACCEPT_EULA
           value: "Y"
-                - name: SA_PASSWORD
+        - name: SA_PASSWORD
           valueFrom:
             secretKeyRef:
               name: cemp-secret
               key: SA_PASSWORD
-                - name: MSSQL_PID
+        - name: MSSQL_PID
           value: "Developer"
         volumeMounts:
-                - name: mssql-storage
+        - name: mssql-storage
           mountPath: /var/opt/mssql
         resources:
           requests:
@@ -39,6 +40,6 @@ spec:
             cpu: 1000m
             memory: 2Gi
       volumes:
-            - name: mssql-storage
-              persistentVolumeClaim:
-               claimName: mssql-pvc
+      - name: mssql-storage
+        persistentVolumeClaim:
+          claimName: mssql-pvc

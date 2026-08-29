@@ -13,15 +13,34 @@ spec:
       labels:
         app: cemp-api
     spec:
-      imagePullSecrets:
-      - name: acr-secret
       containers:
       - name: cemp-api
         image: adhivenkatesh7/cemp-api:v2
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
+          name: http
         envFrom:
         - configMapRef:
-            name: cemp-app-config
+            name: cemp-config
         - secretRef:
-            name: cemp-app-secret
+            name: cemp-secret
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
