@@ -4,11 +4,10 @@ metadata:
   name: cemp-api-service
   namespace: cemp
 spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+    targetPort: 80
+    protocol: TCP
   selector:
     app: cemp-api
-  ports:
-    - name: http
-      port: 80
-      targetPort: 8080
-      protocol: TCP
-  type: ClusterIP
