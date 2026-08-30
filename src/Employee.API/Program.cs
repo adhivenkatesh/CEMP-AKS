@@ -72,6 +72,9 @@ app.MapGet("/", () =>
     });
 });
 
+app.MapGet("api/check", () =>{
+    return Results.Ok(new {Status="Running!"});
+});
 
 app.MapGet("/api/config", () =>
 {
