@@ -76,6 +76,10 @@ app.MapGet("api/check", () =>{
     return Results.Ok(new {Status="Running good!"});
 });
 
+app.MapGet("api/welcome", () => {
+    return Results.Ok(new { Status = "WElCOME TO THIS SESSION!" });
+});
+
 app.MapGet("/api/config", () =>
 {
     return Results.Ok(new
