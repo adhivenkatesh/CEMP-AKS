@@ -9,7 +9,7 @@ kubectl apply -f ./k8s/aks-new/05-ingress-aks.yaml
 
 NEW DEPLYMENT FOR ENVIRONMENTS (DEV,PROD,TEST)
 # 1. Create namespace
-kubectl apply -f kubernetes/00-namespace.yaml
+
 
 # 2. Config + Secret (with DB password)
 kubectl apply -f kubernetes/01-configmap.yaml

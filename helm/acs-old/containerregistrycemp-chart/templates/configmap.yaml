@@ -7,13 +7,13 @@ data:
   # Uppercase - for legacy ACS
   APP_NAME: "CEMP-Portal"
   APP_VERSION: "v2.1.0"
-  COMPANY_NAME: "IKEA"
+  COMPANY_NAME: "MPC"
   DB_SERVER: "cemp-mssql"
   DB_DATABASE: "CEMPDB"
   # Lowercase - for new AKS / .NET 8 (this fixes /api/config null)
   applicationName: "CEMP-Portal"
   version: "v2.1.0"
-  company: "IKEA"
+  company: "MPC"
   dbServer: "cemp-mssql"
   dbDatabase: "CEMPDB"
   ASPNETCORE_ENVIRONMENT: "Production"
