@@ -25,8 +25,8 @@ kubectl get pods -n cemp -w
 kubectl logs -f deployment/mssql -n cemp
 
 # 4. Then API
-kubectl apply -f kubernetes/03-deployment.yaml
-kubectl apply -f kubernetes/04-service.yaml
+kubectl apply -f ./k8s/aks-new/03-deployment.yaml
+kubectl apply -f ./k8s/aks-new/04-service.yaml
 
 # 5. Test
 kubectl get all -n cemp

@@ -35,27 +35,36 @@ var port = Environment.GetEnvironmentVariable("API_PORT");
 var appName = GetConfig("APP_NAME", "applicationName", "CEMP-Portal");
 var version = GetConfig("APP_VERSION", "version", "v2.1.0");
 var company = GetConfig("COMPANY_NAME", "company", "IKEA");
-var dbServer = GetConfig("DB_SERVER", "databaseServer", "mssql-service");
-var dbDatabase = GetConfig("DB_DATABASE", "databaseName", "EmployeeDB");
-var dbUser = GetConfig("DB_USERNAME", "databaseUser", "sa");
-var dbPassword = GetConfig("DB_PASSWORD", "databasePassword", "YourStrong!Pass123");
+var dbServer = GetConfig("DB_SERVER", "databaseServer", "(localdb)\\MSSQLLocalDB");
+var dbDatabase = GetConfig("DB_DATABASE", "databaseName", "EmployeeDb");
+var dbUser = GetConfig("DB_USERNAME", "databaseUser", "");
+var dbPassword = GetConfig("DB_PASSWORD", "databasePassword", "");
 var apiKey = GetConfig("API_KEY", "apiKey");
 
-var connectionString =
-    $"Server={dbServer};" +
-    $"Database={dbDatabase};" +
-    $"User Id={dbUser};" +
-    $"Password={dbPassword};" +
-    "TrustServerCertificate=True;";
+// FIX: Local Windows Auth vs Cloud SQL Auth
+string connectionString;
+bool isLocalDb = dbServer.Contains("localdb", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(dbUser);
+
+if (isLocalDb)
+{
+    // LOCAL - from your screenshot: DESKTOP-U0G9582/LOCALDB#... / Windows Auth
+    connectionString = $"Server={dbServer};Database={dbDatabase};Integrated Security=True;TrustServerCertificate=True;Connection Timeout=30;";
+}
+else
+{
+    // CLOUD - mssql-service with sa
+    connectionString = $"Server={dbServer};Database={dbDatabase};User Id={dbUser};Password={dbPassword};TrustServerCertificate=True;";
+}
+
+Console.WriteLine($"ENV={env} | Server={dbServer} | DB={dbDatabase} | Auth={(isLocalDb ? "Windows-LOCAL" : "SQL-CLOUD")}");
 
 // YOUR EXISTING METHODS - KEPT AS IS
 app.MapGet("/", () => Results.Ok(new { Message = $"Welcome! to {appName}", Version = version, Company = company }));
 app.MapGet("api/check", () => Results.Ok(new { Status = "Running good!" }));
 app.MapGet("api/welcome", () => Results.Ok(new { Status = "Welcome to this session!" }));
-app.MapGet("/api/config", () => Results.Ok(new { ApplicationName = appName, Version = version, Company = company, DatabaseConfigured = !string.IsNullOrEmpty(dbPassword) && dbPassword != "not-set", ApiKeyConfigured = !string.IsNullOrEmpty(apiKey), Status = "Running" }));
+app.MapGet("/api/config", () => Results.Ok(new { ApplicationName = appName, Version = version, Company = company, DatabaseConfigured = !string.IsNullOrEmpty(connectionString), ApiKeyConfigured = !string.IsNullOrEmpty(apiKey), Status = "Running", Environment = env, DBServer = dbServer }));
 app.MapGet("/api/health", () => Results.Ok(new { Health = health }));
 
-// NEW: ADD EMPLOYEES METHOD
 app.MapGet("/api/employees", async () => {
     try
     {
@@ -70,17 +79,21 @@ app.MapGet("/api/employees", async () => {
         }
         return Results.Ok(list);
     }
-    catch (Exception ex) { return Results.Problem(ex.Message + " Conn:" + dbServer + "/" + dbDatabase); }
+    catch (Exception ex) { return Results.Problem(ex.Message + $" Conn:{dbServer}/{dbDatabase} Env:{env}"); }
 });
 
 app.MapPost("/api/employees", async (Employee emp) => {
-    using var conn = new SqlConnection(connectionString);
-    await conn.OpenAsync();
-    using var cmd = new SqlCommand("INSERT INTO Employees (Name, Email) VALUES (@n, @e); SELECT SCOPE_IDENTITY()", conn);
-    cmd.Parameters.AddWithValue("@n", emp.Name);
-    cmd.Parameters.AddWithValue("@e", emp.Email);
-    var id = await cmd.ExecuteScalarAsync();
-    return Results.Ok(new { Id = id, emp.Name, emp.Email });
+    try
+    {
+        using var conn = new SqlConnection(connectionString);
+        await conn.OpenAsync();
+        using var cmd = new SqlCommand("INSERT INTO Employees (Name, Email) VALUES (@n, @e); SELECT SCOPE_IDENTITY()", conn);
+        cmd.Parameters.AddWithValue("@n", emp.Name);
+        cmd.Parameters.AddWithValue("@e", emp.Email);
+        var id = await cmd.ExecuteScalarAsync();
+        return Results.Ok(new { Id = id, emp.Name, emp.Email });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
 });
 
 if (string.IsNullOrEmpty(port)) port = env == "Development" ? "5000" : "80";
