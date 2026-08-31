@@ -1,87 +1,44 @@
-using Employee.Api.Data; // <-- THIS WAS MISSING - matches your yellow folder
-using Microsoft.Data.SqlClient;
+using Employee.API.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Configuration
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-    .AddEnvironmentVariables();
-
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
 
-string GetConfig(string upperKey, string lowerKey, string fallback = "")
+if (builder.Environment.IsDevelopment())
 {
-    return builder.Configuration[upperKey]
-        ?? builder.Configuration[lowerKey]
-        ?? Environment.GetEnvironmentVariable(upperKey)
-        ?? Environment.GetEnvironmentVariable(lowerKey)
-        ?? Environment.GetEnvironmentVariable(upperKey.ToUpper())
-        ?? fallback;
-}
-
-var dbServer = GetConfig("DB_SERVER", "DbServer", "mssql-service");
-var dbDatabase = GetConfig("DB_DATABASE", "DbDatabase", "EmployeeDB");
-var dbUser = GetConfig("DB_USER", "DbUser", "sa");
-var dbPassword = GetConfig("DB_PASSWORD", "DbPassword", "YourStrong!Pass123");
-
-var rawConn = builder.Configuration.GetConnectionString("DefaultConnection")
-           ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-
-SqlConnectionStringBuilder sqlBuilder;
-if (!string.IsNullOrWhiteSpace(rawConn))
-{
-    sqlBuilder = new SqlConnectionStringBuilder(rawConn);
+    // LOCAL VS - uses RAM, no SQL needed
+    builder.Services.AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase("EmployeeDB_Local"));
 }
 else
 {
-    sqlBuilder = new SqlConnectionStringBuilder
-    {
-        DataSource = $"{dbServer},1433",
-        InitialCatalog = dbDatabase,
-        UserID = dbUser,
-        Password = dbPassword
-    };
+    // AKS - uses real MSSQL
+    string server = Environment.GetEnvironmentVariable("DB_SERVER") ?? "mssql-service,1433";
+    if (!server.Contains(',')) server += ",1433";
+    string db = Environment.GetEnvironmentVariable("DB_DATABASE") ?? "EmployeeDB";
+    string user = Environment.GetEnvironmentVariable("DB_USER") ?? "sa";
+    string pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "YourStrong!Pass123";
+    string conn = $"Server={server};Database={db};User Id={user};Password={pass};TrustServerCertificate=True;Encrypt=Optional;MultipleActiveResultSets=true";
+    builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(conn, sql => sql.EnableRetryOnFailure()));
 }
-
-sqlBuilder.IntegratedSecurity = false;
-sqlBuilder.TrustServerCertificate = true;
-sqlBuilder.Encrypt = SqlConnectionEncryptOption.Optional;
-sqlBuilder.Authentication = SqlAuthenticationMethod.SqlPassword;
-sqlBuilder.MultipleActiveResultSets = true;
-
-string finalConnString = sqlBuilder.ConnectionString;
-Console.WriteLine($"ENV={builder.Environment.EnvironmentName} | Server={sqlBuilder.DataSource} | DB={sqlBuilder.InitialCatalog} | Auth=SqlPassword");
-
-// TODO: Replace AppDbContext with name you saw inside Employee.Api.Data folder
-// If you saw EmployeeContext, use EmployeeContext
-// If you saw AppDbContext, use AppDbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(finalConnString));
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Seed for both local and AKS
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+    if (!db.Employees.Any())
+    {
+        db.Employees.Add(new EmployeeEntity { Name = "Adhi", Department = "DevOps", Email = "adhi@mpc.com", Salary = 90000 });
+        db.SaveChanges();
+    }
 }
 
-DateTime utcNow = DateTime.UtcNow;
-TimeZoneInfo istZone;
-try { istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"); }
-catch { istZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"); }
-DateTime istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
+app.MapGet("/", () => new { message = "Welcome! to Employee.API", version = "16-final-dual-db", time = DateTime.Now });
+app.MapGet("/api/employees", async (AppDbContext db) => await db.Employees.ToListAsync());
+app.MapGet("/api/employees/{id:int}", async (AppDbContext db, int id) => await db.Employees.FindAsync(id) is EmployeeEntity e ? Results.Ok(e) : Results.NotFound());
+app.MapPost("/api/employees", async (AppDbContext db, EmployeeEntity emp) => { db.Employees.Add(emp); await db.SaveChangesAsync(); return Results.Created($"/api/employees/{emp.Id}", emp); });
+app.MapDelete("/api/employees/{id:int}", async (AppDbContext db, int id) => { var e = await db.Employees.FindAsync(id); if (e == null) return Results.NotFound(); db.Employees.Remove(e); await db.SaveChangesAsync(); return Results.Ok(); });
 
-app.MapGet("/", () => new
-{
-    message = "Welcome! to Employee.API",
-    version = "9.0.17",
-    company = "MPC",
-    timeUtc = utcNow,
-    timeIST = istNow
-});
-
-app.MapControllers();
 app.Run();

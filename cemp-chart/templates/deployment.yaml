@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cemp-api
+  namespace: cemp
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: cemp-api
+  template:
+    metadata:
+      labels:
+        app: cemp-api
+    spec:
+      containers:
+            - name: cemp-api
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+                - containerPort: 8080
+        env:
+                - name: DB_SERVER
+          value: {{ .Values.env.DB_SERVER | quote }}
+                - name: DB_DATABASE
+          value: {{ .Values.env.DB_DATABASE | quote }}
+                - name: DB_USER
+          value: {{ .Values.env.DB_USER | quote }}
+                - name: DB_PASSWORD
+          value: {{ .Values.env.DB_PASSWORD | quote }}
+                - name: ASPNETCORE_ENVIRONMENT
+          value: Production
