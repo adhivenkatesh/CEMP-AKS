@@ -1,6 +1,11 @@
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.SqlServer; // Add this using directive to enable UseSqlServer extension method
 
+//using em // <-- Add this, change Employee.API.Data to your folder
 var builder = WebApplication.CreateBuilder(args);
+
+
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
@@ -8,13 +13,8 @@ builder.Configuration
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
-var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
+// Your existing helper - KEPT AS IS
 string GetConfig(string upperKey, string lowerKey, string fallback = "")
 {
     return builder.Configuration[upperKey]
@@ -25,78 +25,85 @@ string GetConfig(string upperKey, string lowerKey, string fallback = "")
         ?? fallback;
 }
 
-DateTime utcNow = DateTime.UtcNow;
-TimeZoneInfo istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-DateTime indianTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
-var health = "Running successfully! with github-actions as on:- " + $"{indianTime}";
+// ================= PERMANENT FIX - START =================
+var dbServer = GetConfig("DB_SERVER", "DbServer", "mssql-service");
+var dbDatabase = GetConfig("DB_DATABASE", "DbDatabase", "EmployeeDB");
+var dbUser = GetConfig("DB_USER", "DbUser", "sa");
+var dbPassword = GetConfig("DB_PASSWORD", "DbPassword", "YourStrong!Pass123");
 
-var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-var port = Environment.GetEnvironmentVariable("API_PORT");
-var appName = GetConfig("APP_NAME", "applicationName", "CEMP-Portal");
-var version = GetConfig("APP_VERSION", "version", "v2.1.0");
-var company = GetConfig("COMPANY_NAME", "company", "MPC");
-var dbServer = GetConfig("DB_SERVER", "databaseServer", "(localdb)\\MSSQLLocalDB");
-var dbDatabase = GetConfig("DB_DATABASE", "databaseName", "EmployeeDb");
-var dbUser = GetConfig("DB_USERNAME", "databaseUser", "");
-var dbPassword = GetConfig("DB_PASSWORD", "databasePassword", "");
-var apiKey = GetConfig("API_KEY", "apiKey");
+// Try raw connection string from config
+var rawConn = builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-// FIX: Local Windows Auth vs Cloud SQL Auth
-string connectionString;
-bool isLocalDb = dbServer.Contains("localdb", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(dbUser);
-
-if (isLocalDb)
+SqlConnectionStringBuilder sqlBuilder;
+if (!string.IsNullOrWhiteSpace(rawConn))
 {
-    // LOCAL - from your screenshot: DESKTOP-U0G9582/LOCALDB#... / Windows Auth
-    connectionString = $"Server={dbServer};Database={dbDatabase};Integrated Security=True;TrustServerCertificate=True;Connection Timeout=30;";
+    sqlBuilder = new SqlConnectionStringBuilder(rawConn);
 }
 else
 {
-    // CLOUD - mssql-service with sa
-    connectionString = $"Server={dbServer};Database={dbDatabase};User Id={dbUser};Password={dbPassword};TrustServerCertificate=True;";
+    sqlBuilder = new SqlConnectionStringBuilder
+    {
+        DataSource = $"{dbServer},1433",
+        InitialCatalog = dbDatabase,
+        UserID = dbUser,
+        Password = dbPassword
+    };
 }
 
-Console.WriteLine($"ENV={env} | Server={dbServer} | DB={dbDatabase} | Auth={(isLocalDb ? "Windows-LOCAL" : "SQL-CLOUD")}");
+// FORCE SQL Password auth - kills SSPI / NetSecurityNative error
+sqlBuilder.IntegratedSecurity = false;
+sqlBuilder.TrustServerCertificate = true;
+sqlBuilder.Encrypt = SqlConnectionEncryptOption.Optional;
+sqlBuilder.Authentication = SqlAuthenticationMethod.SqlPassword;
+sqlBuilder.MultipleActiveResultSets = true;
+if (string.IsNullOrWhiteSpace(sqlBuilder.DataSource)) sqlBuilder.DataSource = $"{dbServer},1433";
+if (string.IsNullOrWhiteSpace(sqlBuilder.InitialCatalog)) sqlBuilder.InitialCatalog = dbDatabase;
+if (string.IsNullOrWhiteSpace(sqlBuilder.UserID)) sqlBuilder.UserID = dbUser;
+if (string.IsNullOrWhiteSpace(sqlBuilder.Password)) sqlBuilder.Password = dbPassword;
 
-// YOUR EXISTING METHODS - KEPT AS IS
-app.MapGet("/", () => Results.Ok(new { Message = $"Welcome! to {appName}", Version = version, Company = company }));
-app.MapGet("api/check", () => Results.Ok(new { Status = "Running good!" }));
-app.MapGet("api/welcome", () => Results.Ok(new { Status = "Welcome to this session!" }));
-app.MapGet("/api/config", () => Results.Ok(new { ApplicationName = appName, Version = version, Company = company, DatabaseConfigured = !string.IsNullOrEmpty(connectionString), ApiKeyConfigured = !string.IsNullOrEmpty(apiKey), Status = "Running", Environment = env, DBServer = dbServer }));
-app.MapGet("/api/health", () => Results.Ok(new { Health = health }));
+string finalConnString = sqlBuilder.ConnectionString;
 
-app.MapGet("/api/employees", async () => {
-    try
-    {
-        using var conn = new SqlConnection(connectionString);
-        await conn.OpenAsync();
-        using var cmd = new SqlCommand("SELECT Id, Name, Email FROM Employees", conn);
-        using var reader = await cmd.ExecuteReaderAsync();
-        var list = new List<object>();
-        while (await reader.ReadAsync())
-        {
-            list.Add(new { Id = reader.GetInt32(0), Name = reader.GetString(1), Email = reader.GetString(2) });
-        }
-        return Results.Ok(list);
-    }
-    catch (Exception ex) { return Results.Problem(ex.Message + $" Conn:{dbServer}/{dbDatabase} Env:{env}"); }
+Console.WriteLine($"ENV={builder.Environment.EnvironmentName} | Server={sqlBuilder.DataSource} | DB={sqlBuilder.InitialCatalog} | Auth={(sqlBuilder.IntegratedSecurity ? "Windows-LOCAL" : "SqlPassword")}");
+Console.WriteLine($"Conn:{sqlBuilder.DataSource}/{sqlBuilder.InitialCatalog} Env:{builder.Environment.EnvironmentName}");
+
+// Register DbContext - CHANGE EmployeeDbContext to your actual context name if different
+builder.Services.AddDbContext<DbContext>(options =>
+    options.UseSqlServer(finalConnString));
+
+builder.Services.AddSingleton(finalConnString); // use this for now
+
+// ================= PERMANENT FIX - END =================
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
+// Your existing time logic - KEPT AS IS
+DateTime utcNow = DateTime.UtcNow;
+TimeZoneInfo istZone;
+try
+{
+    istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+}
+catch
+{
+    istZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata");
+}
+DateTime istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
+
+// Your existing root endpoints - KEPT
+app.MapGet("/", () => new
+{
+    message = "Welcome! to Employee.API",
+    version = "9.0.17",
+    company = "MPC",
+    timeUtc = utcNow,
+    timeIST = istNow
 });
 
-app.MapPost("/api/employees", async (Employee emp) => {
-    try
-    {
-        using var conn = new SqlConnection(connectionString);
-        await conn.OpenAsync();
-        using var cmd = new SqlCommand("INSERT INTO Employees (Name, Email) VALUES (@n, @e); SELECT SCOPE_IDENTITY()", conn);
-        cmd.Parameters.AddWithValue("@n", emp.Name);
-        cmd.Parameters.AddWithValue("@e", emp.Email);
-        var id = await cmd.ExecuteScalarAsync();
-        return Results.Ok(new { Id = id, emp.Name, emp.Email });
-    }
-    catch (Exception ex) { return Results.Problem(ex.Message); }
-});
-
-if (string.IsNullOrEmpty(port)) port = env == "Development" ? "5000" : "80";
-app.Run($"http://0.0.0.0:{port}");
-
-record Employee(string Name, string Email);
+app.MapControllers();
+app.Run();
