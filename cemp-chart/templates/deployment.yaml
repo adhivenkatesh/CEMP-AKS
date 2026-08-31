@@ -14,18 +14,19 @@ spec:
         app: cemp-api
     spec:
       containers:
-            - name: cemp-api
+      - name: cemp-api
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-                - containerPort: 8080
+        - containerPort: 8080
         env:
-                - name: DB_SERVER
-          value: {{ .Values.env.DB_SERVER | quote }}
-                - name: DB_DATABASE
-          value: {{ .Values.env.DB_DATABASE | quote }}
-                - name: DB_USER
-          value: {{ .Values.env.DB_USER | quote }}
-                - name: DB_PASSWORD
-          value: {{ .Values.env.DB_PASSWORD | quote }}
-                - name: ASPNETCORE_ENVIRONMENT
-          value: Production
+        - name: DB_SERVER
+          value: "{{ .Values.env.DB_SERVER }}"
+        - name: DB_DATABASE
+          value: "{{ .Values.env.DB_DATABASE }}"
+        - name: DB_USER
+          value: "{{ .Values.env.DB_USER }}"
+        - name: DB_PASSWORD
+          value: "{{ .Values.env.DB_PASSWORD }}"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
