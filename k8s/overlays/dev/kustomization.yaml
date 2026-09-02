@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cemp-dev
+resources:
+- ../../base
+patches:
+- patch: |-
+    - op: replace
+      path: /metadata/name
+      value: cemp-dev
+  target:
+    kind: Namespace
+    name: placeholder
+images:
+- name: adhivenkatesh7/cemp-api
+  newTag: v2-dev

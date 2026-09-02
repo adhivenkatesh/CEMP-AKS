@@ -1,0 +1,36 @@
+# 1. Start Docker Desktop (wait until green)
+
+# 2. Create local K8s cluster (like mini AKS) - 1 command
+k3d cluster create cemp-local --servers 1 --agents 1 --api-port 6550 --port "8080:80@loadbalancer" --port "32088:32088@loadbalancer"
+# Takes 30 sec
+kubectl get nodes
+
+# 3. Build your .NET image
+cd /d/AWS-DEVOPS-ENG-PRACTICE/cemp-aks-dotnet
+docker build -t cemp-api:dev -f Employee.API/Dockerfile .
+
+# 4. Import image into k3d (so k3d doesn't need to pull from Docker Hub)
+k3d image import cemp-api:dev -c cemp-local
+
+# 5. Deploy EVERYTHING in correct order using kustomize
+kubectl apply -k ./k8s/overlays/dev
+
+# 6. Watch until both Ready
+kubectl get pods -n cemp-dev -w
+# Wait till you see:
+# mssql-... 1/1 Running
+# cemp-api-... 1/1 Running (takes 2-3 mins first time for MSSQL image pull)
+# Press Ctrl+C to exit -w
+
+# 7. Test
+kubectl port-forward svc/cemp-api-service 8080:80 -n cemp-dev
+# Keep this terminal open
+
+Terminal 2 - CMD or new GIT BASH:
+curl http://localhost:8080/api/Employees
+# OR open browser: http://localhost:8080/swagger
+# OR http://localhost:8080/api/Employees -> you saw Adhi data
+
+#If you want to delete fully and start fresh:
+k3d cluster delete cemp-local
+docker rmi cemp-api:dev

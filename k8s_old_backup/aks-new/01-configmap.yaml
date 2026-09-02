@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cemp-config
+  namespace: cemp
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  API_PORT: "80"
+  ASPNETCORE_URLS: "http://+:80"
+  LOG_LEVEL: "Error"
