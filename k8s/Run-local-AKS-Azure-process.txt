@@ -1,0 +1,29 @@
+Local (Kind): (Folder )k8s/overlays/local -->
+kubectl apply -k k8s/overlays/local
+
+AKS-PROD: (Folder ) k8s/aks-new/ OR cemp-chart/
+helm install cemp-release ./cemp-chart -n cemp
+
+For dev/prod/test in AKS —need to check this:
+currently have:
+k8s/overlays/dev → should deploy to cemp-dev namespace in AKS
+k8s/overlays/prod → should deploy to cemp-prod namespace in AKS
+test — you don't have yet, you can create k8s/overlays/test
+
+How to test dev/prod in AKS right now:
+# Connect to AKS
+az aks get-credentials --resource-group <your-rg> --name <your-aks>
+
+# DEV
+kubectl create namespace cemp-dev
+kubectl apply -k k8s/overlays/dev -n cemp-dev
+kubectl get pods -n cemp-dev
+
+# PROD
+kubectl create namespace cemp-prod
+kubectl apply -k k8s/overlays/prod -n cemp-prod
+kubectl get pods -n cemp-prod
+
+# Or with Helm with different values
+helm install cemp-dev ./cemp-chart -n cemp-dev --values cemp-chart/values-dev.yaml
+helm install cemp-prod ./cemp-chart -n cemp-prod --values cemp-chart/values-prod.yaml
