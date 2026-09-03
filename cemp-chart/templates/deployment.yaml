@@ -3,30 +3,38 @@ kind: Deployment
 metadata:
   name: cemp-api
   namespace: {{ .Release.Namespace }}
+  labels:
+    app: cemp-api
+    release: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: cemp-api
+      release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: cemp-api
+        release: {{ .Release.Name }}
     spec:
       containers:
       - name: cemp-api
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: 8080
+        - containerPort: 80
         env:
         - name: DB_SERVER
           value: "{{ .Values.env.DB_SERVER }}"
-        - name: DB_DATABASE
-          value: "{{ .Values.env.DB_DATABASE }}"
+        - name: DB_NAME
+          value: "{{ .Values.env.DB_NAME }}"
         - name: DB_USER
           value: "{{ .Values.env.DB_USER }}"
         - name: DB_PASSWORD
-          value: "{{ .Values.env.DB_PASSWORD }}"
+          valueFrom:
+            secretKeyRef:
+              name: mssql-secret
+              key: SA_PASSWORD
         - name: ASPNETCORE_ENVIRONMENT
-          value: "Production"
+          value: "{{ .Values.env.ASPNETCORE_ENVIRONMENT }}"
