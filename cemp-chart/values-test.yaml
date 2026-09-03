@@ -1,4 +1,21 @@
-replicaCount: 2
+replicaCount: 1
+
 image:
-  tag: test
-env: test
+  repository: adhivenkatesh7/cemp-api
+  tag: "v14"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+env:
+  DB_SERVER: mssql-service
+  DB_NAME: CEMP
+  DB_USER: sa
+  ASPNETCORE_ENVIRONMENT: Testing
+
+mssql:
+  enabled: true
+  auth:
+    saPassword: "YourStrong@Passw0rd"

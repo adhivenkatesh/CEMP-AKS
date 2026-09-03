@@ -1,4 +1,29 @@
-replicaCount: 3
+replicaCount: 2
+
 image:
-  tag: prod
-env: production
+  repository: adhivenkatesh7/cemp-api
+  tag: "v14"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+env:
+  DB_SERVER: mssql-service
+  DB_NAME: CEMP
+  DB_USER: sa
+  ASPNETCORE_ENVIRONMENT: Production
+
+mssql:
+  enabled: true
+  auth:
+    saPassword: "YourStrong@Passw0rd"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
