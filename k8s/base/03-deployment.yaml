@@ -14,14 +14,14 @@ spec:
         app: cemp-api
     spec:
       containers:
-      - name: cemp-api
-        image: cemp-api:dev
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 80
-          name: http
-        envFrom:
-        - configMapRef:
-            name: cemp-config
-        - secretRef:
-            name: cemp-secret
+        - name: cemp-api
+          image: cemp-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          envFrom:
+            - configMapRef:
+                name: cemp-config
+            - secretRef:
+                name: cemp-secret

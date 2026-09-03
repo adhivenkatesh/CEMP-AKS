@@ -35,10 +35,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.MapGet("/", () => new { message = "Welcome! to Employee.API", version = "16-final-dual-db", time = DateTime.Now });
-app.MapGet("/api/employees", async (AppDbContext db) => await db.Employees.ToListAsync());
-app.MapGet("/api/employees/{id:int}", async (AppDbContext db, int id) => await db.Employees.FindAsync(id) is EmployeeEntity e ? Results.Ok(e) : Results.NotFound());
-app.MapPost("/api/employees", async (AppDbContext db, EmployeeEntity emp) => { db.Employees.Add(emp); await db.SaveChangesAsync(); return Results.Created($"/api/employees/{emp.Id}", emp); });
-app.MapDelete("/api/employees/{id:int}", async (AppDbContext db, int id) => { var e = await db.Employees.FindAsync(id); if (e == null) return Results.NotFound(); db.Employees.Remove(e); await db.SaveChangesAsync(); return Results.Ok(); });
+    app.MapGet("/", () => new { message = "Welcome! to Employee.API", version = "16-final-dual-db", time = DateTime.Now });
+    app.MapGet("/api/employees", async (AppDbContext db) => await db.Employees.ToListAsync());
+    app.MapGet("/api/employees/{id:int}", async (AppDbContext db, int id) => await db.Employees.FindAsync(id) is EmployeeEntity e ? Results.Ok(e) : Results.NotFound());
+    app.MapPost("/api/employees", async (AppDbContext db, EmployeeEntity emp) => { db.Employees.Add(emp); await db.SaveChangesAsync(); return Results.Created($"/api/employees/{emp.Id}", emp); });
+    app.MapDelete("/api/employees/{id:int}", async (AppDbContext db, int id) => { var e = await db.Employees.FindAsync(id); if (e == null) return Results.NotFound(); db.Employees.Remove(e); await db.SaveChangesAsync(); return Results.Ok(); });
 
-app.Run();
+    app.Run();
