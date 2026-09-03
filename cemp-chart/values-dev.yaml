@@ -19,3 +19,6 @@ mssql:
   enabled: true
   auth:
     saPassword: "YourStrong@Passw0rd"
+
+ingress:
+  enabled: false
