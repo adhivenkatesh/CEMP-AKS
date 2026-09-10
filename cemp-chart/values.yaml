@@ -1,21 +1,18 @@
-replicaCount: 2
+replicaCount: 1
 image:
-  repository: adhivenkatesh7/cemp-api
-  tag: v16
-  pullPolicy: Always
+  repository: docker.io/library/cemp-api
+  tag: azurite-fix
+  pullPolicy: Never
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 80
 env:
-  DB_SERVER: "mssql-service"
-  DB_DATABASE: "EmployeeDB"
-  DB_USER: "sa"
-  DB_PASSWORD: "YourStrongPass123"
+  ASPNETCORE_ENVIRONMENT: Development
+  BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+  ConnectionStrings__BlobStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+  AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+mssql:
+  persistence:
+    enabled: false
 ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    - host: cemp.local
-      paths:
-        - path: /
-          pathType: Prefix
+  enabled: false

@@ -3,8 +3,6 @@ kind: Service
 metadata:
   name: {{ .Release.Name }}-cemp-api-service
   namespace: {{ .Release.Namespace }}
-  labels:
-    app: cemp-api
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -14,3 +12,16 @@ spec:
   selector:
     app: cemp-api
     release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1433
+      targetPort: 1433
+  selector:
+    app: mssql
