@@ -1,4 +1,4 @@
-name: CEMP Build and Deploy to AKS
+name: CEMP Build and Deploy to AKS but presentl mannual workflow
 
 on:
   # Uncomment the following line to trigger the workflow on push to the main branch
