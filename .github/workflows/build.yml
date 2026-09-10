@@ -2,7 +2,7 @@ name: CEMP Build and Deploy to AKS
 
 on:
  # push:
-    branches: [ "main" ]
+ #   branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
