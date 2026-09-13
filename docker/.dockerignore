@@ -17,3 +17,14 @@ Dockerfile*
 *.user
 *.suo
 *.log
+
+
+**/bin
+**/obj
+**/.vs
+**/node_modules
+**/TestResults
+**/.git
+**/.idea
+*.md
+cemp-chart

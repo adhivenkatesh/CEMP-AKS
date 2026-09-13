@@ -1,0 +1,32 @@
+HTTP/1.1 500 Internal Server Error
+Content-Type: text/plain; charset=utf-8
+Date: Fri, 11 Sep 2026 10:30:12 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+
+System.FormatException: No valid combination of account information found.
+   at Azure.Storage.StorageConnectionString.<>c.<Parse>b__67_0(String err)
+   at Azure.Storage.StorageConnectionString.ParseCore(String connectionString, StorageConnectionString& accountInformation, Action`1 error)
+   at Azure.Storage.StorageConnectionString.Parse(String connectionString)
+   at Azure.Storage.Blobs.BlobServiceClient..ctor(String connectionString, BlobClientOptions options)
+   at Azure.Storage.Blobs.BlobServiceClient..ctor(String connectionString)
+   at Program.<>c.<<Main>$>b__0_0(IServiceProvider sp) in D:\AWS-DEVOPS-ENG-PRACTICE\cemp-aks-dotnet\src\Employee.API\Program.cs:line 22
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitFactory(FactoryCallSite factoryCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.CreateServiceAccessor(ServiceIdentifier serviceIdentifier)
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at lambda_method64(Closure, Object, HttpContext)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+
+HEADERS
+=======
+Accept: */*
+Host: localhost:9081
+User-Agent: curl/8.6.0

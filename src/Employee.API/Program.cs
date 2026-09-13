@@ -1,43 +1,21 @@
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
+using Azure.Storage;
 using Employee.API.Employee.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton(sp =>
-{
-    var cfg = sp.GetRequiredService<IConfiguration>();
-    var conn = cfg["Storage:Conn"] ?? Environment.GetEnvironmentVariable("Storage__Conn") ?? "UseDevelopmentStorage=true";
-
-    // Local Azurite inside K8s
-    if (conn.Contains("azurite") || conn.Contains("devstoreaccount1"))
-    {
-        return new BlobServiceClient(
-            new Uri("http://azurite:10000/devstoreaccount1"),
-            new Azure.Storage.StorageSharedKeyCredential(
-                "devstoreaccount1",
-                "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="));
-    }
-    return new BlobServiceClient(conn);
+var accountName = "devstoreaccount1";
+var accountKey = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
+var blobUri = new Uri("http://azurite:10000/devstoreaccount1");
+Console.WriteLine($"BLOB FORCED TO: {blobUri}");
+builder.Services.AddSingleton(_ => {
+    return new BlobServiceClient(blobUri, new StorageSharedKeyCredential(accountName, accountKey));
 });
+
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase("EmployeeDB_Local"));
-}
-else
-{
-    string server = Environment.GetEnvironmentVariable("DB_SERVER") ?? "mssql-service";
-    if (!server.Contains(',') && !server.Contains(':')) server += ",1433";
-    string db = Environment.GetEnvironmentVariable("DB_DATABASE") ?? Environment.GetEnvironmentVariable("DB_NAME") ?? "EmployeeDB";
-    string user = Environment.GetEnvironmentVariable("DB_USER") ?? "sa";
-    string pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "YourStrong!Pass123";
-    string conn = $"Server={server};Database={db};User Id={user};Password={pass};TrustServerCertificate=True;Encrypt=Optional;MultipleActiveResultSets=true";
-    builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(conn, sql => sql.EnableRetryOnFailure()));
-}
+builder.Services.AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase("EmployeeDB_Local"));
 
 var app = builder.Build();
 
@@ -50,15 +28,21 @@ using (var scope = app.Services.CreateScope())
         db.Employees.Add(new EmployeeEntity { Name = "Adhi", Department = "DevOps", Email = "adhi@mpc.com", Salary = 90000 });
         db.SaveChanges();
     }
+    try
+    {
+        var blobService = scope.ServiceProvider.GetRequiredService<BlobServiceClient>();
+        blobService.GetBlobContainerClient("employee-photos").CreateIfNotExists();
+        blobService.GetBlobContainerClient("employee-photos-thumb").CreateIfNotExists();
+        Console.WriteLine("BLOB CONTAINERS READY");
+    }
+    catch (Exception ex) { Console.WriteLine($"Blob init warning: {ex.Message}"); }
 }
 
-app.MapGet("/", () => new { message = "Welcome! to Employee.API", version = "v17-with-photo", time = DateTime.Now });
+app.MapGet("/", () => new { message = "Welcome! to Employee.API", version = "v19-azurite-fixed", time = DateTime.Now, blob = "http://azurite:10000/devstoreaccount1" });
 app.MapGet("/api/employees", async (AppDbContext db) => await db.Employees.ToListAsync());
 app.MapGet("/api/employees/{id:int}", async (AppDbContext db, int id) => await db.Employees.FindAsync(id) is EmployeeEntity e ? Results.Ok(e) : Results.NotFound());
 app.MapPost("/api/employees", async (AppDbContext db, EmployeeEntity emp) => { db.Employees.Add(emp); await db.SaveChangesAsync(); return Results.Created($"/api/employees/{emp.Id}", emp); });
 app.MapDelete("/api/employees/{id:int}", async (AppDbContext db, int id) => { var e = await db.Employees.FindAsync(id); if (e == null) return Results.NotFound(); db.Employees.Remove(e); await db.SaveChangesAsync(); return Results.Ok(); });
-
-
 app.MapGet("/api/employees/{id}/photo", async (int id, BlobServiceClient blobService) =>
 {
     var container = blobService.GetBlobContainerClient("employee-photos");
@@ -73,18 +57,23 @@ app.MapGet("/api/employees/{id}/photo", async (int id, BlobServiceClient blobSer
     return Results.NotFound("No photo yet");
 });
 
-app.MapGet("/api/employees/{id}/photo/{size}", async (int id, string size, BlobServiceClient blobService) =>
+
+app.MapPost("/api/employees/{id}/photo", async (int id, HttpRequest request, BlobServiceClient blobService) =>
 {
-    var container = blobService.GetBlobContainerClient($"employee-photos-{size}");
+    if (!request.HasFormContentType) return Results.BadRequest("No file");
+    var form = await request.ReadFormAsync();
+    var file = form.Files["file"];
+    if (file == null) return Results.BadRequest("file field missing");
+
+    var container = blobService.GetBlobContainerClient("employee-photos");
     await container.CreateIfNotExistsAsync();
-    await foreach (var blobItem in container.GetBlobsAsync())
-    {
-        if (!blobItem.Name.StartsWith($"{id}_")) continue;
-        var client = container.GetBlobClient(blobItem.Name);
-        var download = await client.DownloadAsync();
-        return Results.File(download.Value.Content, download.Value.ContentType);
-    }
-    return Results.NotFound($"No {size} photo");
+    var blobName = $"{id}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+    var client = container.GetBlobClient(blobName);
+
+    using var stream = file.OpenReadStream();
+    await client.UploadAsync(stream, new Azure.Storage.Blobs.Models.BlobHttpHeaders { ContentType = file.ContentType });
+
+    return Results.Ok(new { message = "Uploaded", blobName });
 });
 
 app.Run();

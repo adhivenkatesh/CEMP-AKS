@@ -23,8 +23,10 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "{{ .Values.env.ASPNETCORE_ENVIRONMENT }}"
         - name: DB_SERVER
           value: "{{ .Values.env.DB_SERVER }}"
         - name: DB_NAME
@@ -36,5 +38,11 @@ spec:
             secretKeyRef:
               name: mssql-secret
               key: SA_PASSWORD
-        - name: ASPNETCORE_ENVIRONMENT
-          value: "{{ .Values.env.ASPNETCORE_ENVIRONMENT }}"
+        - name: BlobStorage__ConnectionString
+          value: "{{ .Values.env.BlobStorage__ConnectionString | quote }}"
+        - name: ConnectionStrings__BlobStorage
+          value: "{{ .Values.env.ConnectionStrings__BlobStorage | quote }}"
+        - name: AZURE_STORAGE_CONNECTION_STRING
+          value: "{{ .Values.env.AZURE_STORAGE_CONNECTION_STRING | quote }}"
+        - name: ConnectionStrings__DefaultConnection
+          value: "{{ .Values.env.ConnectionStrings__DefaultConnection | quote }}"
